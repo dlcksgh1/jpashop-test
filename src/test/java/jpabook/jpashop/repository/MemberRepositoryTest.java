@@ -2,30 +2,64 @@ package jpabook.jpashop.repository;
 
 
 import jpabook.jpashop.domain.Member;
-import org.assertj.core.api.Assertions;
+import jpabook.jpashop.service.MemberService;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
-public class MemberRepositoryTest {
+import javax.persistence.EntityManager;
 
-    @Autowired MemberRepository memberRepository;
+import static com.jayway.jsonpath.internal.path.PathCompiler.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+@SpringBootTest
+@Transactional
+class MemberRepositoryTest {
+
+
+    @Autowired
+    MemberService memberService;
+
+    @Autowired
+    MemberRepository memberRepository;
+
+    //@Autowired EntityManager em;
 
     @Test
-    @Transactional
-    @Rollback(false)
-    public void testMember() {
+    public void 회원가입() throws Exception {
+        //given
+        Member member = new Member();
+        member.setName("kim");
 
-/*        Member member = new Member();
-        member.setUsername("memberA");
-        Long savedId = memberRepository.save(member);
-        Member findMember = memberRepository.find(savedId);
-        Assertions.assertThat(findMember.getId()).isEqualTo(member.getId());
+        //when
+        Long saveId = memberService.join(member);
 
-        Assertions.assertThat(findMember.getUsername()).isEqualTo(member.getUsername());
-        Assertions.assertThat(findMember).isEqualTo(member); //JPA 엔티티 동일성보장*/
+        //then
+
+        //em.flush;
+        Assertions.assertEquals(member, memberRepository.findOne(saveId));
+
     }
+
+    @Test
+    public void 중복_회원_조회() throws Exception {
+        //given
+        Member member1 = new Member();
+        member1.setName("kim");
+
+        Member member2 = new Member();
+        member2.setName("kim");
+
+        //when
+        memberService.join(member1);
+        //memberService.join(member2); //예외가 발생해야 한다!!
+
+        //then
+        IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> memberService.join(member2));
+        assertEquals("이미 존재하는 회원입니다.", thrown.getMessage());
+    }
+
 }
